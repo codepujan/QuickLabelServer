@@ -149,7 +149,9 @@ console.log("SP is",sp);
                 data:getSp.img,
 		orgi:img,
 		width:dimensions.width,
-		height:dimensions.height}
+		height:dimensions.height,
+		note:getSp.note
+}
 }
 
 storeReference.storeReference.dispatch({
@@ -356,7 +358,8 @@ console.log("SP is",sp);
                 data:getSp.img,
                 orgi:img,
                 width:dimensions.width,
-                height:dimensions.height}
+                height:dimensions.height,
+		note:getSp.note}
 }
 
  try {
