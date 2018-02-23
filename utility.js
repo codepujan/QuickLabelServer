@@ -145,6 +145,12 @@ let img=result.rows[0].imageblob;
 
 let notes=result.rows[0].notes;
 
+
+let instanceColors=result.rows[0].savedinstancehex;
+
+
+console.log("Instance COlor is ",instanceColors);
+
 console.log("Gotta Fetch a New Fresh  State To The USer ");
 
 sp=gsp.get_sp(img);
@@ -153,7 +159,7 @@ sp=Promise.promisifyAll(sp);
 
 let restored = await sp.segmentAsyncAsync();
 
-return {img:restored,obj:sp,note:notes};
+return {img:restored,obj:sp,note:notes,instances:instanceColors};
 
 }
 
@@ -172,6 +178,9 @@ let strbuf=result.rows[0].spobject;
 let img=result.rows[0].imageblob;
 
 let notes=result.rows[0].notes;
+
+let instanceColors=result.rows[0].savedinstancehex;
+
 
 let restored;
 
@@ -206,7 +215,7 @@ restored= await sp.restoreWorkAsyncAsync(buffer, buffer.length);
 
 console.log(restored);
 
-return {img:restored,obj:sp,note:notes};
+return {img:restored,obj:sp,note:notes,instances:instanceColors};
 
 }
 

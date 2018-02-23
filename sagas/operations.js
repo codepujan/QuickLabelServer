@@ -150,7 +150,8 @@ console.log("SP is",sp);
 		orgi:img,
 		width:dimensions.width,
 		height:dimensions.height,
-		note:getSp.note
+		note:getSp.note,
+		instanceColors:getSp.instances
 }
 }
 
@@ -359,7 +360,9 @@ console.log("SP is",sp);
                 orgi:img,
                 width:dimensions.width,
                 height:dimensions.height,
-		note:getSp.note}
+		note:getSp.note,
+		instanceColors:getSp.instances
+}
 }
 
  try {
