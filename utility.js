@@ -103,7 +103,7 @@ console.log("Image id Got is ",imageid);
 
 await client.connect();
 
-let query_s = 'SELECT * FROM labelingapp.imagestorage WHERE user_id=? and dataset_name=? and imageid=?';
+let query_s = 'SELECT * FROM labelingapp.imagestorage WHERE user_id=? and dataset_name=? and uploadedat=?';
 
 //let imageId='23d619ac-ef7f-4976-9bd4-61a0b132e33c';
 //TODO : userId and userDatabase 
@@ -117,6 +117,14 @@ let result=await client.execute(query_s,param_s,{ prepare: true });
 
 let img=result.rows[0].imageblob;
 
+
+
+//Before returning : mark this as currently active image 
+let update_state='UPDATE labelingapp.userstates SET lastActiveImage=?,lastactivedataset=? WHERE user_id=?';
+let value_update=[imageid,datasetID,userID];
+
+await client.execute(update_state,value_update,{prepare:true});
+
 return img;
 
 }
@@ -126,7 +134,7 @@ return img;
 await client.connect();
 
 //First ,complete the update part of things 
-let query_s = 'UPDATE labelingapp.imagestorage SET spobject=? WHERE user_id=? and dataset_name=? and imageid=?';
+let query_s = 'UPDATE labelingapp.imagestorage SET spobject=? WHERE user_id=? and dataset_name=? and uploadedat=?';
 let param_s = ['empty',userID,datasetID,imageid];
 
 let result=await client.execute(query_s,param_s,{ prepare: true });
@@ -134,7 +142,7 @@ let result=await client.execute(query_s,param_s,{ prepare: true });
 //Okay now we have updated the SP 
 //But also , we need to retrive the new sp and send him over the enw one 
 
-query_s = 'SELECT * FROM labelingapp.imagestorage WHERE user_id=? and dataset_name=? and imageid=?';
+query_s = 'SELECT * FROM labelingapp.imagestorage WHERE user_id=? and dataset_name=? and uploadedat=?';
 
 
 param_s = [userID,datasetID,imageid];
@@ -166,7 +174,7 @@ return {img:restored,obj:sp,note:notes,instances:instanceColors};
 async function retrieveSpObject(userID,datasetID,imageid,sp){
 await client.connect();
 
-let query_s = 'SELECT * FROM labelingapp.imagestorage WHERE user_id=? and dataset_name=? and imageid=?';
+let query_s = 'SELECT * FROM labelingapp.imagestorage WHERE user_id=? and dataset_name=? and uploadedat=?';
 
 
 let param_s = [userID,datasetID,imageid];
@@ -280,7 +288,7 @@ console.log("Serialized Object");
 
 await client.connect();
 
-let query_s = 'UPDATE labelingapp.imagestorage SET spobject=? WHERE user_id=? and dataset_name=? and imageid=?';
+let query_s = 'UPDATE labelingapp.imagestorage SET spobject=? WHERE user_id=? and dataset_name=? and uploadedat=?';
 
 
 //await fs.writeFileAsync('./dumpfiles/before_write.buf', strbuf);
@@ -305,14 +313,14 @@ let buffer=new Buffer(saveImageBuffer,'base64');
 
 await client.connect();
 
-let query_s = 'UPDATE labelingapp.imagestorage SET segmentedimageblob=? WHERE user_id=? and dataset_name=? and imageid=?';
+let query_s = 'UPDATE labelingapp.imagestorage SET segmentedimageblob=?,completedstatus=? WHERE user_id=? and dataset_name=? and uploadedat=?';
 
-
-let param_s = [buffer,userid,datasetid,imageid];
+//Setting 1 as completed directly 
+let param_s = [buffer,1,userid,datasetid,imageid];
 
 let result=await client.execute(query_s,param_s,{ prepare: true });
 
-console.log("UPDATE EXECUTED ");
+console.log(" Save Image UPDATE EXECUTED ");
 
 }
 
