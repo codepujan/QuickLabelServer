@@ -17,9 +17,9 @@ let storespCache="STORE_SP_CACHE";
 
 
 
-async function apiRectangleSegmented(sps,tly,tlx,bry,brx,rgb,sp){
+async function apiRectangleSegmented(sps,tly,tlx,bry,brx,rgb,label,sp){
 //sth else stuff 
-  return await utility.applyRectangleOperation(sps,tly,tlx,bry,brx,rgb,sp);
+  return await utility.applyRectangleOperation(sps,tly,tlx,bry,brx,rgb,label,sp);
 };
 
 async function justLoadImage(userId,datasetId,imageId,sp){
@@ -36,20 +36,20 @@ async function apiJustLoad(spObject,sp){
  return await utility.loadInitialImage('logo.jpg',spObject,sp);
 }
 
-async function apiCircleSegmented(startY,startX,radius,rgb,sp){
+async function apiCircleSegmented(startY,startX,radius,rgb,label,sp){
 
-return utility.applyCircleOperation(startY,startX,radius,rgb,sp);
+return utility.applyCircleOperation(startY,startX,radius,rgb,label,sp);
 
 }
 
 
-async function apiFreeForm(points,rgb,sp){
-return utility.applyFreeFormOperation(points,rgb,sp);
+async function apiFreeForm(points,rgb,label,sp){
+return utility.applyFreeFormOperation(points,rgb,label,sp);
 }
 
 
-async function apiMagicTouch(points,rgb,sp){
-return utility.applyMagicTouchOperation(points,rgb,sp);
+async function apiMagicTouch(points,rgb,label,sp){
+return utility.applyMagicTouchOperation(points,rgb,label,sp);
 }
 
 async function apigetTouchBoundary(pointY,pointX,sp){
@@ -76,9 +76,12 @@ return utility.saveImageWork(userid,datasetid,imageid,sp);
 
 async function apiResetProgress(userid,datasetid,imageid,sp){
 return utility.resetSpObject(userid,datasetid,imageid,sp);
-
-
 }
+
+async function apiapplyForeground(foregrounds,sp){
+return utility.applyForeground(foregrounds,sp);
+}
+
 export function *watchOperations(socket,exchange){
 while(true){
 
@@ -118,8 +121,6 @@ console.log("Operation "+message.payload.operationType);
 console.log("SP  retaiend is ",sp);
 console.log("Socket ID ",socket.id);
 
-
-//OpType either rectangle or laod 
 if(message.payload.operationType=="Load"){
 
 
@@ -180,7 +181,7 @@ console.log("Rectangle Operation Here ");
 console.log("PARAMS",message.payload.datapayload);
 
 //storeReference.storeReference.getState().meanshift
-let segData=yield call(apiRectangleSegmented,storeReference.storeReference.getState().meanshift,message.payload.datapayload.tly,message.payload.datapayload.tlx,message.payload.datapayload.bry,message.payload.datapayload.brx,message.payload.datapayload.rgb,sp);
+let segData=yield call(apiRectangleSegmented,storeReference.storeReference.getState().meanshift,message.payload.datapayload.tly,message.payload.datapayload.tlx,message.payload.datapayload.bry,message.payload.datapayload.brx,message.payload.datapayload.rgb,message.payload.datapayload.label,sp);
 
 
  const reply={
@@ -214,7 +215,7 @@ payload:segData});
 else if(message.payload.operationType=="Circle"){
 
 console.log("Circle Operation Here ");
-let segData=yield call(apiCircleSegmented,message.payload.datapayload.startY,message.payload.datapayload.startX,message.payload.datapayload.radius,message.payload.datapayload.rgb,sp);
+let segData=yield call(apiCircleSegmented,message.payload.datapayload.startY,message.payload.datapayload.startX,message.payload.datapayload.radius,message.payload.datapayload.rgb,message.payload.datapayload.label,sp);
 
 
  const reply={
@@ -242,7 +243,7 @@ payload:segData});
   }
 }else if(message.payload.operationType=="FreeForm"){
 
-let segData=yield call(apiFreeForm,message.payload.datapayload.points,message.payload.datapayload.rgb,sp);
+let segData=yield call(apiFreeForm,message.payload.datapayload.points,message.payload.datapayload.rgb,message.payload.datapayload.label,sp);
 
  const reply={
 
@@ -275,7 +276,7 @@ payload:segData});
 console.log("Inside part of Magic Touch");
 
 
-let segData=yield call(apiMagicTouch,message.payload.datapayload.points,message.payload.datapayload.rgb,sp);
+let segData=yield call(apiMagicTouch,message.payload.datapayload.points,message.payload.datapayload.rgb,message.payload.datapayload.label,sp);
 
  const reply={
           type:'OPERATE',
@@ -371,6 +372,37 @@ console.log("SP is",sp);
           console.error('Caught during socketEmit', error)
             }
 
+
+
+
+}
+else if(message.payload.operationType=="Foreground")
+{
+console.log("Applying Foreground Operation ");
+
+let segdata=yield call(apiapplyForeground,message.payload.datapayload.foregroundArray,sp)
+
+const reply={
+          type:'OPERATE',
+          payload:{
+                data:segdata
+        }
+}
+
+console.log("Dispatching Now ")
+storeReference.storeReference.dispatch({
+type:changeOperatingImage,
+payload:segdata});
+
+try {
+    yield put(socketEmit(reply))
+        storeReference.storeReference.dispatch({
+type:changeOperatingImage,
+payload:segdata});
+
+  } catch(error) {
+   console.error('Caught during socketEmit', error)
+  }
 
 
 

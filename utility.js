@@ -29,27 +29,29 @@ let client = new cassandra.Client({
 
 
 
-async function applyRectangleOperation(msp,tly,tlx,bry,brx,rgb,sp){
-//initial segmentation
-
-
-//sp = Promise.promisifyAll(sp);
-
-
-//let nc = sp.columns();
-//For now 
-//let nc=480;
-let nc=sp.columns();
+async function applyRectangleOperation(msp,tly,tlx,bry,brx,rgb,label,sp){
 
 console.log("Applying Rectangle",tly,tlx,bry,brx);
+console.log("Label is ",label);
+
+let nc=sp.columns();
+
 let tlbr = new Int32Array([tly*nc+tlx, bry*nc+brx]);
 let color_chosen = new Uint8Array([rgb.r, rgb.g, rgb.b]);
-let img = await sp.mergeRectangularAsyncAsync(tlbr, tlbr.length,color_chosen,color_chosen.length);
+
+console.log("Tly",tly);
+console.log("Tlx",tlx);
+console.log("BrY",bry);
+console.log("BrX",brx);
+console.log("RGB",rgb);
+console.log("No Columns ",nc);
+
+let img = await sp.mergeRectangularAsyncAsync(tlbr, tlbr.length,color_chosen,color_chosen.length,label);
 return img;
 
 }
 
-async function applyFreeFormOperation(points,rgb,sp){
+async function applyFreeFormOperation(points,rgb,label,sp){
 
 
 console.log(points,rgb);
@@ -66,14 +68,14 @@ for(var i=0;i<points.length;i++)
 ffpixels=Int32Array.from(mmfpixels);
 let color_chosen = new Uint8Array([rgb.r, rgb.g, rgb.b]);
 let img = await sp.mergeFreeFormAsyncAsync(ffpixels, ffpixels.length,
-                                 color_chosen, color_chosen.length);
+                                 color_chosen, color_chosen.length,label);
 
 return img;
 
 }
 
 
-async function applyMagicTouchOperation(points,rgb,sp){
+async function applyMagicTouchOperation(points,rgb,label,sp){
 
 console.log("Magic Points",points);
 console.log("Magic RGB",rgb);
@@ -89,7 +91,7 @@ ffpixels=Int32Array.from(mmfpixels);
 
 console.log("My Points",ffpixels);
 
-let img=await sp.mergeAsyncAsync(ffpixels,ffpixels.length,color_chosen,color_chosen.length);
+let img=await sp.mergeAsyncAsync(ffpixels,ffpixels.length,color_chosen,color_chosen.length,label);
 
 return img;
 
@@ -245,6 +247,20 @@ return img;
 
 }
 
+//applyForeground(foregrounds,sp)
+async function applyForeground(foregrounds,sp)
+{
+console.log("Foregrounds Array is ",foregrounds);
+
+let img=await sp.setForegroundAsyncAsync(foregrounds);
+
+
+console.log("Applied Foreground ");
+return img;
+
+}
+
+
 async function getSegmentBoundary(pointY,pointX,sp){
 let nc=sp.columns();
  let pixel_clicked = pointY*nc+pointX;
@@ -265,7 +281,7 @@ return returnValue;
 }
 
 
-async function applyCircleOperation(startY,startX,radius,rgb,sp){
+async function applyCircleOperation(startY,startX,radius,rgb,label,sp){
 
 let nc=sp.columns();
 
@@ -273,7 +289,7 @@ console.log("Applying Circle",startY,startX,radius,rgb);
 let ctrRad = new Int32Array([startY*nc+startX,radius]);
 let color_chosen = new Uint8Array([rgb.r,rgb.g,rgb.b]);
 let img = await sp.mergeCircularAsyncAsync(ctrRad, ctrRad.length,
-                                 color_chosen, color_chosen.length);
+                                 color_chosen, color_chosen.length,label);
 return img;
 }
 
@@ -326,6 +342,6 @@ console.log(" Save Image UPDATE EXECUTED ");
 
 
 
-export default {loadInitialImage,applyRectangleOperation,loadSpObject,justLoadImage,applyCircleOperation,applyFreeFormOperation,applyMagicTouchOperation,getSegmentBoundary,saveImage,saveImageWork,retrieveSpObject,resetSpObject}
+export default {loadInitialImage,applyRectangleOperation,loadSpObject,justLoadImage,applyCircleOperation,applyFreeFormOperation,applyMagicTouchOperation,getSegmentBoundary,saveImage,saveImageWork,retrieveSpObject,resetSpObject,applyForeground}
 
 
