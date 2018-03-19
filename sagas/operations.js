@@ -81,6 +81,15 @@ return utility.resetSpObject(userid,datasetid,imageid,sp);
 async function apiapplyForeground(foregrounds,sp){
 return utility.applyForeground(foregrounds,sp);
 }
+ 
+async function apihistorybackward(sp){
+return utility.historyBackward(sp);
+}
+
+async function apihistoryforward(sp){
+return utility.historyForward(sp);
+}
+
 
 export function *watchOperations(socket,exchange){
 while(true){
@@ -406,6 +415,57 @@ payload:segdata});
 
 
 
+}
+else if(message.payload.operationType=="historyback")
+{
+console.log("History Backwards ");
+
+let segdata=yield call(apihistorybackward,sp);
+const reply={
+          type:'OPERATE',
+          payload:{
+                data:segdata
+        }
+}
+
+console.log("Dispatching Now ")
+storeReference.storeReference.dispatch({
+type:changeOperatingImage,
+payload:segdata});
+
+try {
+    yield put(socketEmit(reply))
+        storeReference.storeReference.dispatch({
+type:changeOperatingImage,
+payload:segdata});
+
+  } catch(error) {
+   console.error('Caught during socketEmit', error)
+  }
+}
+else if (message.payload.operationType=="historyforward")
+{
+console.log("History Forward ");
+let segdata=yield call(apihistoryforward,sp);
+const reply={
+          type:'OPERATE',
+          payload:{
+                data:segdata
+        }
+}
+console.log("Dispatching Now ")
+storeReference.storeReference.dispatch({
+type:changeOperatingImage,
+payload:segdata});
+try {
+    yield put(socketEmit(reply))
+        storeReference.storeReference.dispatch({
+type:changeOperatingImage,
+payload:segdata});
+
+  } catch(error) {
+   console.error('Caught during socketEmit', error)
+  }
 }
 else if(message.payload.operationType=="Save")
 {

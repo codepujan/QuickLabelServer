@@ -260,6 +260,15 @@ return img;
 
 }
 
+async function historyBackward(sp){
+let img=await sp.historyBackAsyncAsync();
+return img;
+}
+
+async function historyForward(sp){
+let img=await sp.historyForwardAsyncAsync();
+return img;
+}
 
 async function getSegmentBoundary(pointY,pointX,sp){
 let nc=sp.columns();
@@ -342,6 +351,6 @@ console.log(" Save Image UPDATE EXECUTED ");
 
 
 
-export default {loadInitialImage,applyRectangleOperation,loadSpObject,justLoadImage,applyCircleOperation,applyFreeFormOperation,applyMagicTouchOperation,getSegmentBoundary,saveImage,saveImageWork,retrieveSpObject,resetSpObject,applyForeground}
+export default {loadInitialImage,applyRectangleOperation,loadSpObject,justLoadImage,applyCircleOperation,applyFreeFormOperation,applyMagicTouchOperation,getSegmentBoundary,saveImage,saveImageWork,retrieveSpObject,resetSpObject,applyForeground,historyBackward,historyForward}
 
 
