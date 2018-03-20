@@ -39,13 +39,8 @@ let nc=sp.columns();
 let tlbr = new Int32Array([tly*nc+tlx, bry*nc+brx]);
 let color_chosen = new Uint8Array([rgb.r, rgb.g, rgb.b]);
 
-console.log("Tly",tly);
-console.log("Tlx",tlx);
-console.log("BrY",bry);
-console.log("BrX",brx);
-console.log("RGB",rgb);
-console.log("No Columns ",nc);
 
+console.log("Working on Label ",label);
 let img = await sp.mergeRectangularAsyncAsync(tlbr, tlbr.length,color_chosen,color_chosen.length,label);
 return img;
 
@@ -269,6 +264,31 @@ async function historyForward(sp){
 let img=await sp.historyForwardAsyncAsync();
 return img;
 }
+ 
+async function mergelabels(mergergb,mergelabel,sp)
+{
+
+//Need to call  a loop of nums here
+console.log("RGBS I got are ",mergergb);
+
+console.log("Labels i got are ",mergelabel);
+ 
+let img;
+let color_chosen;
+for(let i=0;i<mergergb.length;i++){
+
+color_chosen = new Uint8Array([mergergb[i].r,mergergb[i].g,mergergb[i].b]);
+
+img=await sp.setLabelColorAsyncAsync(mergelabel[i], color_chosen, color_chosen.length);
+}
+
+//APplying multiple merges and returning the image only after merges are complete 
+//Don't know how it shall respond to history 
+//Check it and report back to Dr. Murali 
+
+return img;
+
+}
 
 async function getSegmentBoundary(pointY,pointX,sp){
 let nc=sp.columns();
@@ -351,6 +371,6 @@ console.log(" Save Image UPDATE EXECUTED ");
 
 
 
-export default {loadInitialImage,applyRectangleOperation,loadSpObject,justLoadImage,applyCircleOperation,applyFreeFormOperation,applyMagicTouchOperation,getSegmentBoundary,saveImage,saveImageWork,retrieveSpObject,resetSpObject,applyForeground,historyBackward,historyForward}
+export default {loadInitialImage,applyRectangleOperation,loadSpObject,justLoadImage,applyCircleOperation,applyFreeFormOperation,applyMagicTouchOperation,getSegmentBoundary,saveImage,saveImageWork,retrieveSpObject,resetSpObject,applyForeground,historyBackward,historyForward, mergelabels}
 
 

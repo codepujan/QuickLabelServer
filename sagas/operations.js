@@ -43,6 +43,11 @@ return utility.applyCircleOperation(startY,startX,radius,rgb,label,sp);
 }
 
 
+async function apimergeInstances(rgbs,labels,sp)
+{
+return utility.mergelabels(rgbs,labels,sp);
+}
+
 async function apiFreeForm(points,rgb,label,sp){
 return utility.applyFreeFormOperation(points,rgb,label,sp);
 }
@@ -381,6 +386,38 @@ console.log("SP is",sp);
           console.error('Caught during socketEmit', error)
             }
 
+
+
+
+}
+else if(message.payload.operationType=="MergeInstance")
+{
+console.log("Merging Instances of different colors ")
+
+let segdata=yield call(apimergeInstances,message.payload.datapayload.rgbs,message.payload.datapayload.labels,sp);
+
+
+const reply={
+          type:'OPERATE',
+          payload:{
+                data:segdata
+        }
+}
+
+console.log("Dispatching Now ")
+storeReference.storeReference.dispatch({
+type:changeOperatingImage,
+payload:segdata});
+
+try {
+    yield put(socketEmit(reply))
+        storeReference.storeReference.dispatch({
+type:changeOperatingImage,
+payload:segdata});
+
+  } catch(error) {
+   console.error('Caught during socketEmit', error)
+  }
 
 
 
