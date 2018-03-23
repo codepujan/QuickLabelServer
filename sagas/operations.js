@@ -17,9 +17,9 @@ let storespCache="STORE_SP_CACHE";
 
 
 
-async function apiRectangleSegmented(sps,tly,tlx,bry,brx,rgb,label,sp,count,imageid){
+async function apiRectangleSegmented(sps,tly,tlx,bry,brx,rgb,label,sp,count,imageid,labelmap,datasetid){
 //sth else stuff 
-  return await utility.applyRectangleOperation(sps,tly,tlx,bry,brx,rgb,label,sp,count,imageid);
+  return await utility.applyRectangleOperation(sps,tly,tlx,bry,brx,rgb,label,sp,count,imageid,labelmap,datasetid);
 };
 
 async function justLoadImage(userId,datasetId,imageid,sp,count){
@@ -36,9 +36,9 @@ async function apiJustLoad(spObject,sp,count,imageid){
  return await utility.loadInitialImage('logo.jpg',spObject,sp,count,imageid);
 }
 
-async function apiCircleSegmented(startY,startX,radius,rgb,label,sp,count,imageid){
+async function apiCircleSegmented(startY,startX,radius,rgb,label,sp,count,imageid,labelmap,datasetid){
 
-return utility.applyCircleOperation(startY,startX,radius,rgb,label,sp,count,imageid);
+return utility.applyCircleOperation(startY,startX,radius,rgb,label,sp,count,imageid,labelmap,datasetid);
 
 }
 
@@ -48,13 +48,13 @@ async function apimergeInstances(rgbs,labels,sp,count,imageid)
 return utility.mergelabels(rgbs,labels,sp,count,imageid);
 }
 
-async function apiFreeForm(points,rgb,label,sp,count,imageid){
-return utility.applyFreeFormOperation(points,rgb,label,sp,count,imageid);
+async function apiFreeForm(points,rgb,label,sp,count,imageid,labelmap,datasetid){
+return utility.applyFreeFormOperation(points,rgb,label,sp,count,imageid,labelmap,datasetid);
 }
 
 
-async function apiMagicTouch(points,rgb,label,sp,count,imageid){
-return utility.applyMagicTouchOperation(points,rgb,label,sp,count,imageid);
+async function apiMagicTouch(points,rgb,label,sp,count,imageid,labelmap,datasetid){
+return utility.applyMagicTouchOperation(points,rgb,label,sp,count,imageid,labelmap,datasetid);
 }
 
 async function apigetTouchBoundary(pointY,pointX,sp){
@@ -83,8 +83,8 @@ async function apiResetProgress(userid,datasetid,imageid,sp,count){
 return utility.resetSpObject(userid,datasetid,imageid,sp,count);
 }
 
-async function apiapplyForeground(foregrounds,sp,count,imageid){
-return utility.applyForeground(foregrounds,sp,count,imageid);
+async function apiapplyForeground(foregrounds,sp,count,imageid,labelmap,datasetid){
+return utility.applyForeground(foregrounds,sp,count,imageid,labelmap,datasetid);
 }
  
 async function apihistorybackward(sp,count,imageid){
@@ -106,6 +106,8 @@ const message=yield take('CONNECTION');// OPERATION IS THE INITIAL MESSAGE , NOT
 let sp={};
 let actionCount=0;
 let imageid='';
+let labelmap={};
+let datasetid='';
 
 const socketIdReply={
 type:'CONNECTID',
@@ -147,12 +149,15 @@ console.log("Payload",message.payload.datapayload.imageId);
 
 actionCount++;
 imageid=message.payload.datapayload.imageId;
+datasetid=message.payload.datapayload.datasetId;
+
 
 console.log("DataSetId",message.payload.datapayload.datasetId);
 
 let  img=yield call(justLoadImage,message.payload.datapayload.userId,message.payload.datapayload.datasetId,message.payload.datapayload.imageId,sp,actionCount);
 
-let dimensions=sizeOf(img);
+let dimensions=sizeOf(img.img);
+labelmap=img.map;
 
 console.log("Dimensions",dimensions.width,dimensions.height);
 
@@ -168,7 +173,7 @@ console.log("SP is",sp);
           type: 'REPLY',
           payload: {
                 data:getSp.img,
-		orgi:img,
+		orgi:img.img,
 		width:dimensions.width,
 		height:dimensions.height,
 		note:getSp.note,
@@ -201,7 +206,7 @@ console.log("PARAMS",message.payload.datapayload);
 actionCount++;
 
 //storeReference.storeReference.getState().meanshift
-let segData=yield call(apiRectangleSegmented,storeReference.storeReference.getState().meanshift,message.payload.datapayload.tly,message.payload.datapayload.tlx,message.payload.datapayload.bry,message.payload.datapayload.brx,message.payload.datapayload.rgb,message.payload.datapayload.label,sp,actionCount,imageid);
+let segData=yield call(apiRectangleSegmented,storeReference.storeReference.getState().meanshift,message.payload.datapayload.tly,message.payload.datapayload.tlx,message.payload.datapayload.bry,message.payload.datapayload.brx,message.payload.datapayload.rgb,message.payload.datapayload.label,sp,actionCount,imageid,labelmap,datasetid);
 
 
  const reply={
@@ -241,7 +246,7 @@ else if(message.payload.operationType=="Circle"){
 actionCount++;
 
 console.log("Circle Operation Here ");
-let segData=yield call(apiCircleSegmented,message.payload.datapayload.startY,message.payload.datapayload.startX,message.payload.datapayload.radius,message.payload.datapayload.rgb,message.payload.datapayload.label,sp,actionCount,imageid);
+let segData=yield call(apiCircleSegmented,message.payload.datapayload.startY,message.payload.datapayload.startX,message.payload.datapayload.radius,message.payload.datapayload.rgb,message.payload.datapayload.label,sp,actionCount,imageid,labelmap,datasetid);
 
 
  const reply={
@@ -277,7 +282,7 @@ payload:segData});
 
 actionCount++;
 
-let segData=yield call(apiFreeForm,message.payload.datapayload.points,message.payload.datapayload.rgb,message.payload.datapayload.label,sp,actionCount,imageid);
+let segData=yield call(apiFreeForm,message.payload.datapayload.points,message.payload.datapayload.rgb,message.payload.datapayload.label,sp,actionCount,imageid,labelmap,datasetid);
 
  const reply={
 
@@ -312,7 +317,7 @@ console.log("Inside part of Magic Touch");
 
 actionCount++;
 
-let segData=yield call(apiMagicTouch,message.payload.datapayload.points,message.payload.datapayload.rgb,message.payload.datapayload.label,sp,actionCount,imageid);
+let segData=yield call(apiMagicTouch,message.payload.datapayload.points,message.payload.datapayload.rgb,message.payload.datapayload.label,sp,actionCount,imageid,labelmap,datasetid);
 
  const reply={
           type:'OPERATE',
@@ -386,7 +391,9 @@ console.log("Image Id ",message.payload.datapayload.imageid);
 
 let  img=yield call(justLoadImage,message.payload.datapayload.userid,message.payload.datapayload.datasetid,message.payload.datapayload.imageid,sp,actionCount);
 
-let dimensions=sizeOf(img);
+labelmap=img.map;
+
+let dimensions=sizeOf(img.img);
 
 console.log("Dimensions",dimensions.width,dimensions.height);
 
@@ -399,7 +406,7 @@ console.log("SP is",sp);
           type: 'REPLY',
           payload: {
                 data:getSp.img,
-                orgi:img,
+                orgi:img.img,
                 width:dimensions.width,
                 height:dimensions.height,
 		note:getSp.note,
@@ -456,7 +463,7 @@ console.log("Applying Foreground Operation ");
 
 actionCount++;
 
-let segdata=yield call(apiapplyForeground,message.payload.datapayload.foregroundArray,sp,actionCount,imageid)
+let segdata=yield call(apiapplyForeground,message.payload.datapayload.foregroundArray,sp,actionCount,imageid,labelmap,datasetid)
 
 const reply={
           type:'OPERATE',
