@@ -29,10 +29,14 @@ let client = new cassandra.Client({
 
 
 
-async function applyRectangleOperation(msp,tly,tlx,bry,brx,rgb,label,sp){
+async function applyRectangleOperation(msp,tly,tlx,bry,brx,rgb,label,sp,count,imageid){
 
 console.log("Applying Rectangle",tly,tlx,bry,brx);
 console.log("Label is ",label);
+
+
+console.log("Image id  is ",imageid);
+
 
 let nc=sp.columns();
 
@@ -42,11 +46,22 @@ let color_chosen = new Uint8Array([rgb.r, rgb.g, rgb.b]);
 
 console.log("Working on Label ",label);
 let img = await sp.mergeRectangularAsyncAsync(tlbr, tlbr.length,color_chosen,color_chosen.length,label);
+
+let add_log='INSERT INTO labelingapp.imageactions(imageid,action,data,actioncount)VALUES(?,?,?,?)';
+
+let metadata={tlbr:tlbr,color:color_chosen,label:label};
+
+let add_values=[imageid,"Rectangle",JSON.stringify(metadata),count];
+
+await client.execute(add_log,add_values,{prepare:true});
+
+
+
 return img;
 
 }
 
-async function applyFreeFormOperation(points,rgb,label,sp){
+async function applyFreeFormOperation(points,rgb,label,sp,count,imageid){
 
 
 console.log(points,rgb);
@@ -65,15 +80,20 @@ let color_chosen = new Uint8Array([rgb.r, rgb.g, rgb.b]);
 let img = await sp.mergeFreeFormAsyncAsync(ffpixels, ffpixels.length,
                                  color_chosen, color_chosen.length,label);
 
+let add_log='INSERT INTO labelingapp.imageactions(imageid,action,data,actioncount)VALUES(?,?,?,?)';
+let add_values=[imageid,"Freeform",JSON.stringify({pixels:ffpixels,color:color_chosen,label:label}),count];
+
+await client.execute(add_log,add_values,{prepare:true});
+
 return img;
 
 }
 
 
-async function applyMagicTouchOperation(points,rgb,label,sp){
+async function applyMagicTouchOperation(points,rgb,label,sp,count,imageid){
 
-console.log("Magic Points",points);
-console.log("Magic RGB",rgb);
+console.log("Image id  is ",imageid);
+
 let nc = sp.columns();
 let ffpixels;
 let mmfpixels=[];
@@ -88,11 +108,17 @@ console.log("My Points",ffpixels);
 
 let img=await sp.mergeAsyncAsync(ffpixels,ffpixels.length,color_chosen,color_chosen.length,label);
 
+let add_log='INSERT INTO labelingapp.imageactions(imageid,action,data,actioncount)VALUES(?,?,?,?)';
+
+let add_values=[imageid,"MagicTouch",JSON.stringify({pixels:ffpixels,color:color_chosen,label:label}),count];
+
+await client.execute(add_log,add_values,{prepare:true});
+
 return img;
 
 } 
 
-async function justLoadImage(userID,datasetID,imageid,sp){
+async function justLoadImage(userID,datasetID,imageid,sp,count){
 
 //let img=await fs.readFileAsync(path);
 
@@ -122,11 +148,20 @@ let value_update=[imageid,datasetID,userID];
 
 await client.execute(update_state,value_update,{prepare:true});
 
+let add_log='INSERT INTO labelingapp.imageactions(imageid,action,data,actioncount)VALUES(?,?,?,?)';
+let add_values=[imageid,"Load","",count];
+
+await client.execute(add_log,add_values,{prepare:true});
+
+
+
 return img;
+
+
 
 }
 
- async function resetSpObject(userID,datasetID,imageid,sp){
+ async function resetSpObject(userID,datasetID,imageid,sp,count){
 
 await client.connect();
 
@@ -164,11 +199,17 @@ sp=Promise.promisifyAll(sp);
 
 let restored = await sp.segmentAsyncAsync();
 
+
+let add_log='INSERT INTO labelingapp.imageactions(imageid,action,data,actioncount)VALUES(?,?,?,?)';
+let add_values=[imageid,"Reset","",count];
+
+await client.execute(add_log,add_values,{prepare:true});
+
 return {img:restored,obj:sp,note:notes,instances:instanceColors};
 
 }
 
-async function retrieveSpObject(userID,datasetID,imageid,sp){
+async function retrieveSpObject(userID,datasetID,imageid,sp,count){
 await client.connect();
 
 let query_s = 'SELECT * FROM labelingapp.imagestorage WHERE user_id=? and dataset_name=? and uploadedat=?';
@@ -220,22 +261,34 @@ restored= await sp.restoreWorkAsyncAsync(buffer, buffer.length);
 
 console.log(restored);
 
+
+//Let's not store base64s for now 
+
+let add_log='INSERT INTO labelingapp.imageactions(imageid,action,data,actioncount)VALUES(?,?,?,?)';
+let add_values=[imageid,"Segment",JSON.stringify({image:restored.toString('base64')}),count];
+
+await client.execute(add_log,add_values,{prepare:true});
+
+
 return {img:restored,obj:sp,note:notes,instances:instanceColors};
 
 }
 
-function loadSpObject(img,dispatcher,sp){
+function loadSpObject(img,dispatcher,sp,count,imageid){
 
 //This one ,Commented Out  just for Restore check 
 
+
 sp = new mslearn.SegProc(img,img.length);
 sp = Promise.promisifyAll(sp);
+
+
 return sp;
 }
 
 
 
-async function loadInitialImage(path,sp){
+async function loadInitialImage(path,sp,count,imageid){
 //  let img = await fs.readFileAsync(path);
 let img = await sp.segmentAsyncAsync();
 return img;
@@ -243,11 +296,17 @@ return img;
 }
 
 //applyForeground(foregrounds,sp)
-async function applyForeground(foregrounds,sp)
+async function applyForeground(foregrounds,sp,count,imageid)
 {
 console.log("Foregrounds Array is ",foregrounds);
 
 let img=await sp.setForegroundAsyncAsync(foregrounds);
+
+
+let add_log='INSERT INTO labelingapp.imageactions(imageid,action,data,actioncount)VALUES(?,?,?,?)';
+let add_values=[imageid,"Foreground",JSON.stringify({foreground:foregrounds}),count];
+
+await client.execute(add_log,add_values,{prepare:true});
 
 
 console.log("Applied Foreground ");
@@ -255,17 +314,29 @@ return img;
 
 }
 
-async function historyBackward(sp){
+async function historyBackward(sp,count,imageid){
 let img=await sp.historyBackAsyncAsync();
+
+let add_log='INSERT INTO labelingapp.imageactions(imageid,action,data,actioncount)VALUES(?,?,?,?)';
+let add_values=[imageid,"Backward","",count];
+
+await client.execute(add_log,add_values,{prepare:true});
+
 return img;
 }
 
-async function historyForward(sp){
+async function historyForward(sp,count,imageid){
 let img=await sp.historyForwardAsyncAsync();
+
+let add_log='INSERT INTO labelingapp.imageactions(imageid,action,data,actioncount)VALUES(?,?,?,?)';
+let add_values=[imageid,"Forward","",count];
+
+await client.execute(add_log,add_values,{prepare:true});
+
 return img;
 }
  
-async function mergelabels(mergergb,mergelabel,sp)
+async function mergelabels(mergergb,mergelabel,sp,count,imageid)
 {
 
 //Need to call  a loop of nums here
@@ -282,9 +353,11 @@ color_chosen = new Uint8Array([mergergb[i].r,mergergb[i].g,mergergb[i].b]);
 img=await sp.setLabelColorAsyncAsync(mergelabel[i], color_chosen, color_chosen.length);
 }
 
-//APplying multiple merges and returning the image only after merges are complete 
-//Don't know how it shall respond to history 
-//Check it and report back to Dr. Murali 
+let add_log='INSERT INTO labelingapp.imageactions(imageid,action,data,actioncount)VALUES(?,?,?,?)';
+let add_values=[imageid,"Merge",JSON.stringify({rgbs:mergergb,labels:mergelabel}),count];
+
+await client.execute(add_log,add_values,{prepare:true});
+
 
 return img;
 
@@ -310,7 +383,7 @@ return returnValue;
 }
 
 
-async function applyCircleOperation(startY,startX,radius,rgb,label,sp){
+async function applyCircleOperation(startY,startX,radius,rgb,label,sp,count,imageid){
 
 let nc=sp.columns();
 
@@ -319,6 +392,13 @@ let ctrRad = new Int32Array([startY*nc+startX,radius]);
 let color_chosen = new Uint8Array([rgb.r,rgb.g,rgb.b]);
 let img = await sp.mergeCircularAsyncAsync(ctrRad, ctrRad.length,
                                  color_chosen, color_chosen.length,label);
+
+
+let add_log='INSERT INTO labelingapp.imageactions(imageid,action,data,actioncount)VALUES(?,?,?,?)';
+let add_values=[imageid,"Circle",JSON.stringify({ctrRadius:ctrRad,color:color_chosen,label:label}),count];
+
+await client.execute(add_log,add_values,{prepare:true});
+
 return img;
 }
 
@@ -348,7 +428,7 @@ console.log("UPDATE EXECUTED ");
 
 
 }
-async function saveImage(saveImageBuffer,userid,datasetid,imageid,sp){
+async function saveImage(saveImageBuffer,userid,datasetid,imageid,sp,count){
 
 console.log(userid);
 console.log(datasetid);
@@ -366,6 +446,11 @@ let param_s = [buffer,1,userid,datasetid,imageid];
 let result=await client.execute(query_s,param_s,{ prepare: true });
 
 console.log(" Save Image UPDATE EXECUTED ");
+
+let add_log='INSERT INTO labelingapp.imageactions(imageid,action,data,actioncount)VALUES(?,?,?,?)';
+let add_values=[imageid,"Completed","",count];
+
+await client.execute(add_log,add_values,{prepare:true});
 
 }
 

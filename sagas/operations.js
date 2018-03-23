@@ -17,58 +17,58 @@ let storespCache="STORE_SP_CACHE";
 
 
 
-async function apiRectangleSegmented(sps,tly,tlx,bry,brx,rgb,label,sp){
+async function apiRectangleSegmented(sps,tly,tlx,bry,brx,rgb,label,sp,count,imageid){
 //sth else stuff 
-  return await utility.applyRectangleOperation(sps,tly,tlx,bry,brx,rgb,label,sp);
+  return await utility.applyRectangleOperation(sps,tly,tlx,bry,brx,rgb,label,sp,count,imageid);
 };
 
-async function justLoadImage(userId,datasetId,imageId,sp){
+async function justLoadImage(userId,datasetId,imageid,sp,count){
 
-return await utility.justLoadImage(userId,datasetId,imageId,sp);
-
-}
-function apiloadSp(dispatcher,img,sp){
-
-return utility.loadSpObject(img,dispatcher,sp);
+return await utility.justLoadImage(userId,datasetId,imageid,sp,count);
 
 }
-async function apiJustLoad(spObject,sp){
- return await utility.loadInitialImage('logo.jpg',spObject,sp);
-}
+function apiloadSp(dispatcher,img,sp,count,imageid){
 
-async function apiCircleSegmented(startY,startX,radius,rgb,label,sp){
-
-return utility.applyCircleOperation(startY,startX,radius,rgb,label,sp);
+return utility.loadSpObject(img,dispatcher,sp,count,imageid);
 
 }
+async function apiJustLoad(spObject,sp,count,imageid){
+ return await utility.loadInitialImage('logo.jpg',spObject,sp,count,imageid);
+}
+
+async function apiCircleSegmented(startY,startX,radius,rgb,label,sp,count,imageid){
+
+return utility.applyCircleOperation(startY,startX,radius,rgb,label,sp,count,imageid);
+
+}
 
 
-async function apimergeInstances(rgbs,labels,sp)
+async function apimergeInstances(rgbs,labels,sp,count,imageid)
 {
-return utility.mergelabels(rgbs,labels,sp);
+return utility.mergelabels(rgbs,labels,sp,count,imageid);
 }
 
-async function apiFreeForm(points,rgb,label,sp){
-return utility.applyFreeFormOperation(points,rgb,label,sp);
+async function apiFreeForm(points,rgb,label,sp,count,imageid){
+return utility.applyFreeFormOperation(points,rgb,label,sp,count,imageid);
 }
 
 
-async function apiMagicTouch(points,rgb,label,sp){
-return utility.applyMagicTouchOperation(points,rgb,label,sp);
+async function apiMagicTouch(points,rgb,label,sp,count,imageid){
+return utility.applyMagicTouchOperation(points,rgb,label,sp,count,imageid);
 }
 
 async function apigetTouchBoundary(pointY,pointX,sp){
 return utility.getSegmentBoundary(pointY,pointX,sp);
 }
 
-async function apisaveImage(saveImageBuffer,userid,datasetid,imageid,sp){
-return utility.saveImage(saveImageBuffer,userid,datasetid,imageid,sp);
+async function apisaveImage(saveImageBuffer,userid,datasetid,imageid,sp,actionCount){
+return utility.saveImage(saveImageBuffer,userid,datasetid,imageid,sp,actionCount);
 }
 
 
-async function apiRetrieveIntermediate(userid,datasetid,imageid,sp){
+async function apiRetrieveIntermediate(userid,datasetid,imageid,sp,count){
 
-return utility.retrieveSpObject(userid,datasetid,imageid,sp);
+return utility.retrieveSpObject(userid,datasetid,imageid,sp,count);
 
 }
 
@@ -79,20 +79,20 @@ return utility.saveImageWork(userid,datasetid,imageid,sp);
 }
 
 
-async function apiResetProgress(userid,datasetid,imageid,sp){
-return utility.resetSpObject(userid,datasetid,imageid,sp);
+async function apiResetProgress(userid,datasetid,imageid,sp,count){
+return utility.resetSpObject(userid,datasetid,imageid,sp,count);
 }
 
-async function apiapplyForeground(foregrounds,sp){
-return utility.applyForeground(foregrounds,sp);
+async function apiapplyForeground(foregrounds,sp,count,imageid){
+return utility.applyForeground(foregrounds,sp,count,imageid);
 }
  
-async function apihistorybackward(sp){
-return utility.historyBackward(sp);
+async function apihistorybackward(sp,count,imageid){
+return utility.historyBackward(sp,count,imageid);
 }
 
-async function apihistoryforward(sp){
-return utility.historyForward(sp);
+async function apihistoryforward(sp,count,imageid){
+return utility.historyForward(sp,count,imageid);
 }
 
 
@@ -104,6 +104,9 @@ while(true){
 const message=yield take('CONNECTION');// OPERATION IS THE INITIAL MESSAGE , NOT Channel Remember 
 
 let sp={};
+let actionCount=0;
+let imageid='';
+
 const socketIdReply={
 type:'CONNECTID',
 payload:socket.id
@@ -142,9 +145,12 @@ console.log("Payload",message.payload.datapayload.imageId);
 
 //userID,datasetID
 
+actionCount++;
+imageid=message.payload.datapayload.imageId;
+
 console.log("DataSetId",message.payload.datapayload.datasetId);
 
-let  img=yield call(justLoadImage,message.payload.datapayload.userId,message.payload.datapayload.datasetId,message.payload.datapayload.imageId,sp);
+let  img=yield call(justLoadImage,message.payload.datapayload.userId,message.payload.datapayload.datasetId,message.payload.datapayload.imageId,sp,actionCount);
 
 let dimensions=sizeOf(img);
 
@@ -153,7 +159,7 @@ console.log("Dimensions",dimensions.width,dimensions.height);
 
 console.log("Before Wiping Off",sp);
 
- let getSp=yield call(apiRetrieveIntermediate,message.payload.datapayload.userId,message.payload.datapayload.datasetId,message.payload.datapayload.imageId,sp);
+ let getSp=yield call(apiRetrieveIntermediate,message.payload.datapayload.userId,message.payload.datapayload.datasetId,message.payload.datapayload.imageId,sp,actionCount);
 
 sp=getSp.obj;
 console.log("SP is",sp);
@@ -176,8 +182,6 @@ payload:getSp.img});
 
 
 
-
-
  try {
      yield put(socketEmit(reply))
        } catch(error) {
@@ -194,8 +198,10 @@ console.log("Rectangle Operation Here ");
 
 console.log("PARAMS",message.payload.datapayload);
 
+actionCount++;
+
 //storeReference.storeReference.getState().meanshift
-let segData=yield call(apiRectangleSegmented,storeReference.storeReference.getState().meanshift,message.payload.datapayload.tly,message.payload.datapayload.tlx,message.payload.datapayload.bry,message.payload.datapayload.brx,message.payload.datapayload.rgb,message.payload.datapayload.label,sp);
+let segData=yield call(apiRectangleSegmented,storeReference.storeReference.getState().meanshift,message.payload.datapayload.tly,message.payload.datapayload.tlx,message.payload.datapayload.bry,message.payload.datapayload.brx,message.payload.datapayload.rgb,message.payload.datapayload.label,sp,actionCount,imageid);
 
 
  const reply={
@@ -225,11 +231,17 @@ payload:segData});
   } catch(error) {
    console.error('Caught during socketEmit', error)
   }
+
+
+
 }
 else if(message.payload.operationType=="Circle"){
 
+
+actionCount++;
+
 console.log("Circle Operation Here ");
-let segData=yield call(apiCircleSegmented,message.payload.datapayload.startY,message.payload.datapayload.startX,message.payload.datapayload.radius,message.payload.datapayload.rgb,message.payload.datapayload.label,sp);
+let segData=yield call(apiCircleSegmented,message.payload.datapayload.startY,message.payload.datapayload.startX,message.payload.datapayload.radius,message.payload.datapayload.rgb,message.payload.datapayload.label,sp,actionCount,imageid);
 
 
  const reply={
@@ -246,6 +258,7 @@ type:changeOperatingImage,
 payload:segData});
 
 
+
  try {
     yield put(socketEmit(reply))
         storeReference.storeReference.dispatch({
@@ -255,9 +268,16 @@ payload:segData});
   } catch(error) {
    console.error('Caught during socketEmit', error)
   }
+
+
+
 }else if(message.payload.operationType=="FreeForm"){
 
-let segData=yield call(apiFreeForm,message.payload.datapayload.points,message.payload.datapayload.rgb,message.payload.datapayload.label,sp);
+
+
+actionCount++;
+
+let segData=yield call(apiFreeForm,message.payload.datapayload.points,message.payload.datapayload.rgb,message.payload.datapayload.label,sp,actionCount,imageid);
 
  const reply={
 
@@ -290,7 +310,9 @@ payload:segData});
 console.log("Inside part of Magic Touch");
 
 
-let segData=yield call(apiMagicTouch,message.payload.datapayload.points,message.payload.datapayload.rgb,message.payload.datapayload.label,sp);
+actionCount++;
+
+let segData=yield call(apiMagicTouch,message.payload.datapayload.points,message.payload.datapayload.rgb,message.payload.datapayload.label,sp,actionCount,imageid);
 
  const reply={
           type:'OPERATE',
@@ -320,6 +342,7 @@ payload:segData});
 
 }else if(message.payload.operationType=="Boundary"){
 
+
 let segBoundary=yield call(apigetTouchBoundary,message.payload.datapayload.y,message.payload.datapayload.x,sp);
 
 const reply={
@@ -339,13 +362,15 @@ const reply={
 }else if(message.payload.operationType=="Completed")
 {
 
+actionCount++;
+
 console.log("Save Completed Image Now ");
 let base64Data=message.payload.datapayload.base64.data;
 base64Data=base64Data.replace(/^data:image\/jpg;base64,/, "");
 base64Data+= base64Data.replace('+', ' ');
 
 
-yield call(apisaveImage,base64Data,message.payload.datapayload.userid,message.payload.datapayload.datasetid,message.payload.datapayload.imageid,sp)
+yield call(apisaveImage,base64Data,message.payload.datapayload.userid,message.payload.datapayload.datasetid,message.payload.datapayload.imageid,sp,actionCount)
 
 console.log("Go Back again and hope it works ");
 
@@ -353,11 +378,13 @@ console.log("Go Back again and hope it works ");
 else if(message.payload.operationType=="Reset"){
 console.log("Resetting the current progress to Back ");
 
+actionCount=0;
+
 console.log("User iD ",message.payload.datapayload.userid);
 console.log("DAtaSet Id ",message.payload.datapayload.datasetid);
 console.log("Image Id ",message.payload.datapayload.imageid);
 
-let  img=yield call(justLoadImage,message.payload.datapayload.userid,message.payload.datapayload.datasetid,message.payload.datapayload.imageid,sp);
+let  img=yield call(justLoadImage,message.payload.datapayload.userid,message.payload.datapayload.datasetid,message.payload.datapayload.imageid,sp,actionCount);
 
 let dimensions=sizeOf(img);
 
@@ -392,9 +419,10 @@ console.log("SP is",sp);
 }
 else if(message.payload.operationType=="MergeInstance")
 {
-console.log("Merging Instances of different colors ")
 
-let segdata=yield call(apimergeInstances,message.payload.datapayload.rgbs,message.payload.datapayload.labels,sp);
+actionCount++;
+
+let segdata=yield call(apimergeInstances,message.payload.datapayload.rgbs,message.payload.datapayload.labels,sp,actionCount,imageid);
 
 
 const reply={
@@ -426,7 +454,9 @@ else if(message.payload.operationType=="Foreground")
 {
 console.log("Applying Foreground Operation ");
 
-let segdata=yield call(apiapplyForeground,message.payload.datapayload.foregroundArray,sp)
+actionCount++;
+
+let segdata=yield call(apiapplyForeground,message.payload.datapayload.foregroundArray,sp,actionCount,imageid)
 
 const reply={
           type:'OPERATE',
@@ -457,7 +487,10 @@ else if(message.payload.operationType=="historyback")
 {
 console.log("History Backwards ");
 
-let segdata=yield call(apihistorybackward,sp);
+
+actionCount++;
+
+let segdata=yield call(apihistorybackward,sp,actionCount,imageid);
 const reply={
           type:'OPERATE',
           payload:{
@@ -483,7 +516,9 @@ payload:segdata});
 else if (message.payload.operationType=="historyforward")
 {
 console.log("History Forward ");
-let segdata=yield call(apihistoryforward,sp);
+actionCount++;
+
+let segdata=yield call(apihistoryforward,sp,actionCount,imageid);
 const reply={
           type:'OPERATE',
           payload:{
