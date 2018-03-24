@@ -29,7 +29,7 @@ let client = new cassandra.Client({
 
 
 
-async function applyRectangleOperation(msp,tly,tlx,bry,brx,rgb,label,sp,count,imageid,labelmap,datasetid){
+async function applyRectangleOperation(msp,tly,tlx,bry,brx,rgb,label,sp,count,imageid,labelmap,datasetid,imagemap){
 
 console.log("Applying Rectangle",tly,tlx,bry,brx);
 console.log("Label is ",label);
@@ -68,12 +68,22 @@ let update_val=[labelmap,datasetid];
 await client.execute(update_stat,update_val,{prepare:true});
 
 
+update_stat='UPDATE labelingapp.imagestatistics SET labelstats=? WHERE imageid=?';
+
+imagemap[label]=imagemap[label]===undefined?1:imagemap[label]+1;
+
+
+update_val=[imagemap,imageid];
+
+
+await client.execute(update_stat,update_val,{prepare:true});
+
 
 return img;
 
 }
 
-async function applyFreeFormOperation(points,rgb,label,sp,count,imageid,labelmap,datasetid){
+async function applyFreeFormOperation(points,rgb,label,sp,count,imageid,labelmap,datasetid,imagemap){
 
 let nc = sp.columns();
 let ffpixels;
@@ -107,12 +117,22 @@ await client.execute(update_stat,update_val,{prepare:true});
 
 
 
+update_stat='UPDATE labelingapp.imagestatistics SET labelstats=? WHERE imageid=?';
+
+imagemap[label]=imagemap[label]===undefined?1:imagemap[label]+1;
+
+
+update_val=[imagemap,imageid];
+
+
+await client.execute(update_stat,update_val,{prepare:true});
+
 return img;
 
 }
 
 
-async function applyMagicTouchOperation(points,rgb,label,sp,count,imageid,labelmap,datasetid){
+async function applyMagicTouchOperation(points,rgb,label,sp,count,imageid,labelmap,datasetid,imagemap){
 
 console.log("Image id  is ",imageid);
 
@@ -148,12 +168,22 @@ let update_val=[labelmap,datasetid];
 
 await client.execute(update_stat,update_val,{prepare:true});
 
+update_stat='UPDATE labelingapp.imagestatistics SET labelstats=? WHERE imageid=?';
+
+imagemap[label]=imagemap[label]===undefined?1:imagemap[label]+1;
+
+
+update_val=[imagemap,imageid];
+
+
+await client.execute(update_stat,update_val,{prepare:true});
+
 
 return img;
 
 } 
 
-async function justLoadImage(userID,datasetID,imageid,sp,count,labelmap){
+async function justLoadImage(userID,datasetID,imageid,sp,count){
 
 //let img=await fs.readFileAsync(path);
 
@@ -180,9 +210,7 @@ let img=result.rows[0].imageblob;
 //Also , get the labelstats of this particular dataset
 let statquery='Select labelstats from labelingapp.datasetstatistcis WHERE datasetname=?';
 let statvalue=[datasetID];
-
 let labelsmap=await client.execute(statquery,statvalue,{prepare:true});
-
 let lmap;
 if(labelsmap.rows.length==0){
 lmap={};
@@ -190,6 +218,18 @@ lmap={};
 lmap=labelsmap.rows[0].labelstats;
 }
 console.log("Labels Map is",lmap);
+
+//Do the same for image ID 
+statquery='Select labelstats from labelingapp.imagestatistics WHERE imageid=?';
+
+statvalue=[imageid];
+labelsmap=await client.execute(statquery,statvalue,{prepare:true});
+let imagemap;
+if(labelsmap.rows.length==0){
+imagemap={};
+}else{
+imagemap=labelsmap.rows[0].labelstats;
+}
 
 //Before returning : mark this as currently active image 
 let update_state='UPDATE labelingapp.userstates SET lastActiveImage=?,lastactivedataset=? WHERE user_id=?';
@@ -202,7 +242,7 @@ let add_values=[imageid,"Load","",count];
 
 await client.execute(add_log,add_values,{prepare:true});
 
-return {img:img,map:lmap};
+return {img:img,map:lmap,imagemap:imagemap};
 
 
 
@@ -342,10 +382,8 @@ return img;
 
 }
 
-//applyForeground(foregrounds,sp)
-async function applyForeground(foregrounds,sp,count,imageid,labelmap,datasetid)
+async function applyForeground(foregrounds,sp,count,imageid,labelmap,datasetid,imagemap)
 {
-console.log("Foregrounds Array is ",foregrounds);
 
 let img=await sp.setForegroundAsyncAsync(foregrounds);
 
@@ -368,6 +406,18 @@ let update_val=[labelmap,datasetid];
 
 
 await client.execute(update_stat,update_val,{prepare:true});
+
+
+update_stat='UPDATE labelingapp.imagestatistics SET labelstats=? WHERE imageid=?';
+
+imagemap[label]=imagemap[label]===undefined?1:imagemap[label]+1;
+
+
+update_val=[imagemap,imageid];
+
+
+await client.execute(update_stat,update_val,{prepare:true});
+
 
 console.log("Applied Foreground ");
 return img;
@@ -443,7 +493,7 @@ return returnValue;
 }
 
 
-async function applyCircleOperation(startY,startX,radius,rgb,label,sp,count,imageid,labelmap,datasetid){
+async function applyCircleOperation(startY,startX,radius,rgb,label,sp,count,imageid,labelmap,datasetid,imagemap){
 
 let nc=sp.columns();
 
@@ -467,6 +517,16 @@ labelmap[label]=labelmap[label]===undefined?1:labelmap[label]+1;
 console.log("Map",labelmap);
 
 let update_val=[labelmap,datasetid];
+
+
+await client.execute(update_stat,update_val,{prepare:true});
+
+update_stat='UPDATE labelingapp.imagestatistics SET labelstats=? WHERE imageid=?';
+
+imagemap[label]=imagemap[label]===undefined?1:imagemap[label]+1;
+
+
+update_val=[imagemap,imageid];
 
 
 await client.execute(update_stat,update_val,{prepare:true});
