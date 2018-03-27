@@ -133,7 +133,7 @@ const message=yield take(socket.id); // OPERATION IS THE MESSAGE , Not Channel R
 
 console.log("Got Special Message from Socket ID ");
 
-console.log("Meta Data "+JSON.stringify(message.payload));
+//console.log("Meta Data "+JSON.stringify(message.payload));
 
 console.log("Operation "+message.payload.operationType);
 
@@ -372,7 +372,7 @@ const reply={
 actionCount++;
 
 console.log("Save Completed Image Now ");
-let base64Data=message.payload.datapayload.base64.data;
+let base64Data=message.payload.datapayload.base64;
 base64Data=base64Data.replace(/^data:image\/jpg;base64,/, "");
 base64Data+= base64Data.replace('+', ' ');
 

@@ -567,14 +567,28 @@ console.log(userid);
 console.log(datasetid);
 console.log(imageid);
 
+
+console.log("Marking Image as Completed "); 
+
+let strbuf = await sp.saveWorkAsyncAsync();
+
+console.log("Serialized Object");
+
+
 let buffer=new Buffer(saveImageBuffer,'base64');
+
+
+console.log("Buffer of Completed Image also created ");
 
 await client.connect();
 
-let query_s = 'UPDATE labelingapp.imagestorage SET segmentedimageblob=?,completedstatus=? WHERE user_id=? and dataset_name=? and uploadedat=?';
+let query_s = 'UPDATE labelingapp.imagestorage SET segmentedimageblob=?,completedstatus=?,spobject=? WHERE user_id=? and dataset_name=? and uploadedat=?';
 
 //Setting 1 as completed directly 
-let param_s = [buffer,1,userid,datasetid,imageid];
+
+console.log("Buffer length ",strbuf.length);
+
+let param_s = [buffer,1,strbuf.toString('utf-8'),userid,datasetid,imageid];
 
 let result=await client.execute(query_s,param_s,{ prepare: true });
 
